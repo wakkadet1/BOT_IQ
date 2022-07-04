@@ -16,15 +16,11 @@ dbconf = ConfigParser()
 dbconf.read_file(open(r'config.ini'))
 
 def load_goals(iq):
-    '''
-    Gets open instruments and their profit from IQ
-    '''
 
     profits_from_iq = iq.get_all_profit()
     assets_from_iq = iq.get_all_open_time()
 
-    #inst = {i: profits_from_iq[i]['turbo'] for i in assets_from_iq['turbo'] if
-    #       assets_from_iq['turbo'][i]['open'] == True}
+
 
     inst = [i for i in assets_from_iq['turbo'] if
             assets_from_iq['turbo'][i]['open'] == True]
@@ -33,10 +29,7 @@ def load_goals(iq):
 
 
 def rename_data(candles):
-    '''
-    Renames some df columns in order to calculate some indicators
 
-    '''
 
     df = pd.DataFrame(candles).rename(columns={'max': 'high', 'min': 'low'})
     return df
@@ -61,19 +54,7 @@ def candles(RTCD):
 
 
 def get_indicators(df):
-    '''
-    Calculates and returns the following indicators from the df given:
 
-        ADX:
-            period = 14
-        EMAs:
-            means 9, 12, 26, 100
-        MACD:
-            period_fast = 12
-            period_slow = 26
-            signal = 9
-
-    '''
     period_adx = int(dbconf.get('Indicator', 'period_adx'))#14
     period_ema = int(dbconf.get('Indicator', 'period_ema'))#10
     period_fast_macd = int(dbconf.get('Indicator', 'period_fast_macd'))#12
@@ -85,53 +66,33 @@ def get_indicators(df):
     period_uo2 = int(dbconf.get('Indicator', 'period_uo2'))     #14
     period_uo3 = int(dbconf.get('Indicator', 'period_uo3'))     #28
 
-
-
-
-
     # ADX Indicator
-    adx = tafin.trend.ADXIndicator(
-        df['high'], df['low'], df['close'], period_adx)
-    #df['ADX'] =round(tafin.trend.ADXIndicator.adx(adx),6)
+    adx = tafin.trend.ADXIndicator(df['high'], df['low'], df['close'], period_adx)
     df['ADX'] = tafin.trend.ADXIndicator.adx(adx)
-    #df['minus'] =round(tafin.trend.ADXIndicator.adx_neg(adx),4)
-    #df['plus'] =round(tafin.trend.ADXIndicator.adx_pos(adx),4)
     df['minus'] =tafin.trend.ADXIndicator.adx_neg(adx)
     df['plus'] =tafin.trend.ADXIndicator.adx_pos(adx)
-    #print("ADX: ", df['ADX'].iloc[-1])
-    #print("ADXM: ", df['minus'].iloc[-1])
-    #print("ADXP: ", df['plus'].iloc[-1])
 
 
 
-    # EMAs 9-12-26-100
-    #df['EMA9'] = TA.EMA(df, 9)
+    # EMA
     df['EMA'] = round(TA.EMA(df, period_ema),8)
-    #df['EMA12'] = TA.EMA(df, 12)
-    #df['EMA26'] = TA.EMA(df, 26)
 
     # MACD
     df['MACD'] =TA.MACD(df, period_fast_macd, period_slow_macd, signal_macd)['MACD']
-    #print("MACD: ",df['MACD'].iloc[-1])
     df['MACD_signal'] = TA.MACD(df, period_fast_macd, period_slow_macd, signal_macd)['SIGNAL']
-    #print("MACD_signal: ",df['MACD_signal'].iloc[-1])
 
 
     #AO
     ao = tafin.momentum.AwesomeOscillatorIndicator(df['high'],df['low'],period_fast_ao,period_slow_ao)
     df['AO'] = tafin.momentum.AwesomeOscillatorIndicator.awesome_oscillator(ao)
-    #print("AO: ",df['AO'].iloc[-1])
-    #RSI
 
+    #RSI
     #rsi = tafin.momentum.RSIIndicator(df['close'],14)
     #df['RSI'] = round(tafin.momentum.RSIIndicator.rsi(rsi),8)
 
     #UO
-
     uo = tafin.momentum.UltimateOscillator(df['high'],df['low'],df['close'],period_uo1,period_uo2,period_uo3,4,2,1)
     df['UO'] = round(tafin.momentum.UltimateOscillator.ultimate_oscillator(uo),8)
-
-
     return df
 
 def data_news(CAS):
@@ -185,27 +146,6 @@ def login(IQ_api, balance_mode):
     return iq
 
 def strfdelta(tdelta, fmt='{D:02}d {H:02}h {M:02}m {S:02}s', inputtype='timedelta'):
-    """Convert a datetime.timedelta object or a regular number to a custom-
-    formatted string, just like the stftime() method does for datetime.datetime
-    objects.
-
-    The fmt argument allows custom formatting to be specified.  Fields can
-    include seconds, minutes, hours, days, and weeks.  Each field is optional.
-
-    Some examples:
-        '{D:02}d {H:02}h {M:02}m {S:02}s' --> '05d 08h 04m 02s' (default)
-        '{W}w {D}d {H}:{M:02}:{S:02}'     --> '4w 5d 8:04:02'
-        '{D:2}d {H:2}:{M:02}:{S:02}'      --> ' 5d  8:04:02'
-        '{H}h {S}s'                       --> '72h 800s'
-
-    The inputtype argument allows tdelta to be a regular number instead of the
-    default, which is a datetime.timedelta object.  Valid inputtype strings:
-        's', 'seconds',
-        'm', 'minutes',
-        'h', 'hours',
-        'd', 'days',
-        'w', 'weeks'
-    """
 
     # Convert tdelta to integer seconds.
     if inputtype == 'timedelta':
@@ -240,13 +180,12 @@ def exp():
 
     r = requests.get('http://just-the-time.appspot.com/')
     utc_current_time = datetime.datetime.strptime(r.content.decode().strip(), '%Y-%m-%d %H:%M:%S')
-    #print(f'utc_current_time: {utc_current_time}')
     utc_offset_in_seconds = time.timezone
     if (utc_offset_in_seconds > 0):
         local_time = utc_current_time - datetime.timedelta(seconds=abs(time.timezone))
     else:
         local_time = utc_current_time + datetime.timedelta(seconds=abs(time.timezone))
-    #print(f'local_time: {local_time}')
+   
 
     exp = datetime.datetime(2022, 7, 11)
     timeBK = local_time
