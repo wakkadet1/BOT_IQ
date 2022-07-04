@@ -1,12 +1,8 @@
 from scipy.special import logsumexp
 
-# TODO:
-# some way to calculate direction of the trend to open position in that direction only.
 
 def ema_cross(df):
-    """
-    Verifies if emas crossed each other
-    """
+
 
     ema9_1 = df['EMA9'].iloc[-1]
     ema12_1 = df['EMA12'].iloc[-1]
@@ -37,9 +33,6 @@ def ema(df):
         return 0
 
 def adx_cross(df):
-    """
-    Verifies if ADX signals crossed each other
-    """
 
     plus_1 = logsumexp(df['plus'].iloc[-1])
     minus_1 = logsumexp(df['minus'].iloc[-1])
@@ -66,10 +59,6 @@ def adx_cross(df):
         return 0
 
 def macd_cross(df):
-    """
-    Verifies if MACD crossed 0
-    """
-
 
 #    if df['MACD'].iloc[-1] > df['MACD_signal'].iloc[-1] and df['MACD'].iloc[-2] < df['MACD_signal'].iloc[-2]:
 #        return 1
